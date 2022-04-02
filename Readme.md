@@ -15,6 +15,7 @@ generator = pipeline(task="text-generation", model=model, tokenizer=tokenizer)
 ```
 
 ## load a pretrained tokenizer/model
+看AutoTokenizer到底支持什么模型(https://huggingface.co/docs/transformers/v4.17.0/en/model_doc/auto#transformers.AutoTokenizer.from_pretrained)
 ```
 from transformers import AutoTokenizer
 
