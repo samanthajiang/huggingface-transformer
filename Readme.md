@@ -14,7 +14,14 @@ model = AutoModelForCausalLM.from_pretrained("distilgpt2")
 generator = pipeline(task="text-generation", model=model, tokenizer=tokenizer)
 ```
 ## Preproces
-**Load a pretrained tokenizer/model**<br>
+### Load a pretrained tokenizer/model<br>
+The from_pretrained method lets you quickly load a pretrained model for any architecture.<br>
+AutoClasses does this job for you so that you automatically retrieve the relevant model given the name/path to the pretrained weights/config/vocabulary.<br>
+Instantiating one of **AutoConfig**, **AutoMode**l, and **AutoTokenizer** will directly create a class of the relevant architecture.For instance: <br>
+```
+model = AutoModel.from_pretrained("bert-base-cased")
+```
+will create a model that is an instance of BertModel.<br>
 看AutoTokenizer到底支持什么模型(https://huggingface.co/docs/transformers/v4.17.0/en/model_doc/auto#transformers.AutoTokenizer.from_pretrained)
 ```
 from transformers import AutoTokenizer
