@@ -1,5 +1,23 @@
 # huggingface transformer
 
+## tokenizer
+Transformer中封装了常见的bert模型使用的分词器，如BertTokenizer,RobertaTokenizer等，可以直接使用。<br>
+对文本进行分词并转化为对应的input_id，这里的id是与bert中embedding矩阵的索引号.<br>
+**BertTokenizer**只能加载bert的tokenizer，**AutoTokenizer**可以根据名字加载不同的tokenizer
+```
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+encoded_input = tokenizer("我是一句话")
+
+```
+tokenizer输出的是python dictionary
+ ```
+ {'input_ids': [101, 2769, 3221, 671, 1368, 6413, 102], 
+'token_type_ids': [0, 0, 0, 0, 0, 0, 0], 
+'attention_mask': [1, 1, 1, 1, 1, 1, 1]}
+ ```
+
+
 ## pipeline
 The pipeline() accepts any model from the Model Hub.  <br>
 from_pretrained方法可以载入tokenizer或预训练的模型 <br>
