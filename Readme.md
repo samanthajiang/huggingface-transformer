@@ -1,5 +1,7 @@
 # Huggingface transformer
 
+https://zhuanlan.zhihu.com/p/120315111
+
 ## Tokenizer
 Transformer中封装了常见的bert模型使用的分词器，如BertTokenizer,RobertaTokenizer等，可以直接使用。<br>
 对文本进行分词并转化为对应的input_id，这里的id是与bert中embedding矩阵的索引号.<br>
@@ -30,7 +32,13 @@ PRETRAINED_VOCAB_FILES_MAP = {
 打开第一个地址就能得到bert-base-uncased的vocab信息
 
  ## Model
-transformer库中：models.bert.modeling_bert.py 提供了不同的预训练模型以供下载。并包含了bert embedding，outputlayer等的实现，可以按需修改。<br>
+transformer库中：models.bert.modeling_bert.py 提供了不同的预训练模型以供下载。并包含了BertEmbeddings，BertEncoder，BertPooler等的实现，可以按需修改。<br>
+**BertEmbeddings**这个类中可以清楚的看到，embedding由三种embedding相加得到，经过layernorm 和 dropout后输出。<br>
+**BertEncoder**主要将embedding的输出，逐个经过每一层Bertlayer的处理，得到各层hidden_state，再根据**config**的参数，来决定最后是否所有的hidden_state都要输出。<br>
+**Bertpooler** 其实就是将BERT的[CLS]的hidden_state 取出，经过一层DNN和Tanh计算后输出。<br>
+在这个文件中还有上述基础的BertModel的进一步的变化，比如**BertForMaskedLM，BertForNextSentencePrediction**这些是Bert加了预训练头的模型，还有**BertForSequenceClassification， BertForQuestionAnswering** 这些加上了特定任务头的模型。<br>
+
+
 重点看下BertModel：
 ```
 class BertModel(BertPreTrainedModel):
@@ -38,6 +46,47 @@ class BertPreTrainedModel(PreTrainedModel):
 class PreTrainedModel(nn.Module, ModuleUtilsMixin, GenerationMixin, PushToHubMixin):
 ```
 因此BertModel是PyTorch的nn.Module和BertPreTrainedModel的subclass。<br>
+BertModel的类定义中，由embedding，encoder，pooler组成，forward时顺序经过三个模块，输出output。
+```python
+class BertModel(BertPreTrainedModel):
+    def __init__(self, config, add_pooling_layer=True):
+        super().__init__(config)
+        self.config = config
+
+        self.embeddings = BertEmbeddings(config)
+        self.encoder = BertEncoder(config)
+
+        self.pooler = BertPooler(config) if add_pooling_layer else None
+
+        self.init_weights()
+        
+     def forward(
+        self, input_ids=None, attention_mask=None, token_type_ids=None,
+        position_ids=None, head_mask=None, inputs_embeds=None,
+        encoder_hidden_states=None, encoder_attention_mask=None,
+    ):
+    """ 省略部分代码 """
+    
+        embedding_output = self.embeddings(
+            input_ids=input_ids, position_ids=position_ids, token_type_ids=token_type_ids, inputs_embeds=inputs_embeds
+        )
+        encoder_outputs = self.encoder(
+            embedding_output,
+            attention_mask=extended_attention_mask,
+            head_mask=head_mask,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_extended_attention_mask,
+        )
+        sequence_output = encoder_outputs[0]
+        pooled_output = self.pooler(sequence_output)
+
+        outputs = (sequence_output, pooled_output,) + encoder_outputs[
+            1:
+        ]  # add hidden_states and attentions if they are here
+        return outputs  # sequence_output, pooled_output, (hidden_states), (attentions)
+
+```
+
 BertModel里有forward()方法，forward()方法中实现了将Token转化为词向量，再将词向量进行多层的Transformer Encoder的复杂变换。<br>
 forward()方法的入参有input_ids、attention_mask、token_type_ids等等，实际上就是刚才Tokenizer部分的输出。<br>
  ```
