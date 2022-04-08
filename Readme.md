@@ -1,6 +1,21 @@
 # Huggingface transformer
+huggingface-transformer的tutorial：https://huggingface.co/course/chapter0/1?fw=pt<br>
+重点讲tokenizer，bertmodel的：https://zhuanlan.zhihu.com/p/120315111
 
-https://zhuanlan.zhihu.com/p/120315111
+## Data Processing
+dataset文档：https://huggingface.co/docs/datasets/load_hub<br>
+更详细的：包括load local/custom dataset，filter，slice，map，split，见：
+https://huggingface.co/course/chapter5/3?fw=pt<br>
+By default, loading local files creates a **DatasetDict** object with a train split
+
+```
+from dataset import load_dataset
+```
+create a random sample by chaining the Dataset.shuffle() and Dataset.select() 
+```
+drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
+# Peek at the first few examples
+```
 
 ## Tokenizer
 Transformer中封装了常见的bert模型使用的分词器，如BertTokenizer,RobertaTokenizer等，可以直接使用。<br>
@@ -98,14 +113,6 @@ forward()方法的入参有input_ids、attention_mask、token_type_ids等等，�
 **last_hidden_state**：输出序列每个位置的语义向量，形状为：(batch_size, sequence_length, hidden_size)。<br>
 **pooler_output**：[CLS]符号对应的语义向量，经过了全连接层和tanh激活；该向量可用于下游分类任务。<br>
 
-## 下游任务
-BERT可以进行很多下游任务，transformers库中实现了一些下游任务。比如单文本分类，transformers库提供了BertForSequenceClassification类。<br>
-#AutoModelForSequenceClassification可以根据模型名称用bert以外的模型。<br>
-想知道transformer提供了哪些model，可以去transformer库的init文件里看，比如from model.bert import BertForSequenceClassification,<br>
-然后再看模型继承的父类，就能看懂和修改模型结构。<br>
-我们也可以参考transformers中的实现，来做自己想做的任务。
-
-
 
 ## 修改模型配置
 在transformer库中： models.bert.configuration_bert<br>
@@ -140,6 +147,13 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
   "vocab_size": 30522
 }
 ```
+## 下游任务
+BERT可以进行很多下游任务，transformers库中实现了一些下游任务。比如单文本分类，transformers库提供了BertForSequenceClassification类。<br>
+#AutoModelForSequenceClassification可以根据模型名称用bert以外的模型。<br>
+想知道transformer提供了哪些model，可以去transformer库的init文件里看，比如from model.bert import BertForSequenceClassification,<br>
+然后再看模型继承的父类，就能看懂和修改模型结构。<br>
+我们也可以参考transformers中的实现，来做自己想做的任务。
+
 
 ## pipeline
 The pipeline() accepts any model from the Model Hub.  <br>
