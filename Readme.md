@@ -57,16 +57,30 @@ PRETRAINED_VOCAB_FILES_MAP = {
 ```
 打开第一个地址就能得到bert-base-uncased的vocab信息
 
- ## Model
-
-transformer库中：models.bert.modeling_bert.py 提供了不同的预训练模型以供下载。并包含了BertEmbeddings，BertEncoder，BertPooler等的实现，可以按需修改。<br>
+ ## Model&Config
+Model的input一定要是**tensor**
+用torch.tensor(encoded_sequence)转换成tensor。<br>
+在Model hub查到想要用的model的名字后，通过AutoModel.from_pretrained(model_name)就能载入对应model。<br>
+也可以自己去Transformer库中的models找。例如bert.modeling_bert.py 中提供了**BertModel**等不同的预训练模型以供下载。并包含了BertEmbeddings，BertEncoder，BertPooler等的实现，可以按需修改模型结构。<br>
 **BertEmbeddings**这个类中可以清楚的看到，embedding由三种embedding相加得到，经过layernorm 和 dropout后输出。<br>
 **BertEncoder**主要将embedding的输出，逐个经过每一层Bertlayer的处理，得到各层hidden_state，再根据**config**的参数，来决定最后是否所有的hidden_state都要输出。<br>
 **Bertpooler** 其实就是将BERT的[CLS]的hidden_state 取出，经过一层DNN和Tanh计算后输出。<br>
-在这个文件中还有上述基础的BertModel的进一步的变化，比如**BertForMaskedLM，BertForNextSentencePrediction**这些是Bert加了预训练头的模型，还有**BertForSequenceClassification， BertForQuestionAnswering** 这些加上了特定任务头的模型。<br>
-
+在这个文件中还有上述基础的**BertModel**的进一步的变化，比如**BertForMaskedLM，BertForNextSentencePrediction**这些是Bert加了预训练头的模型，还有**BertForSequenceClassification， BertForQuestionAnswering** 这些加上了特定任务头的模型。<br>
 
 重点看下BertModel：
+```
+from transformers import BertConfig, BertModel
+# Building the config
+config = BertConfig()
+
+# Building the model from the config
+# ! In this case model weights are randomly initialized!
+model = BertModel(config)
+
+# model weights are loaded from pretrained model. recommend using AutoModel here for checkpoint-agnostic code
+model = BertModel.from_pretrained()
+```
+
 ```
 class BertModel(BertPreTrainedModel):
 class BertPreTrainedModel(PreTrainedModel):
@@ -128,7 +142,7 @@ forward()方法的入参有input_ids、attention_mask、token_type_ids等等，�
 
 上述BertModel的output是一个hidden-layer dense-vector，如果要用在textclassification任务中，要么自己在BertModel上再加linear layer做fine-tune；要么可以直接用训练过的BertForSequenceClassification，返回的是logits（注意任何模型返回的要么是dense vector要么是logits），还要自己再加上torch.nn.functional.softmax(outputs.logits, dim=-1)才能变成prediction。对于输出的label可以去model.config.id2label看。
 
-## 修改模型配置
+## 修改config信息
 在transformer库中： models.bert.configuration_bert<br>
 ```
 BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
@@ -168,6 +182,11 @@ BERT可以进行很多下游任务，transformers库中实现了一些下游任�
 然后再看模型继承的父类，就能看懂和修改模型结构。<br>
 我们也可以参考transformers中的实现，来做自己想做的任务。
 
+## Saving model
+```
+model.save_pretrained("directory_on_my_computer")
+```
+config.json & pytorch_model.bin
 
 ## pipeline
 currently available [pipelines](https://huggingface.co/docs/transformers/main_classes/pipelines)<br>
