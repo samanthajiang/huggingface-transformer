@@ -11,6 +11,7 @@ By default, loading local files creates a **DatasetDict** object with a train sp
 
 ```
 from dataset import load_dataset
+custom_data = load_dataset("csv", data_files="my_file.csv")
 ```
 create a random sample by chaining the Dataset.shuffle() and Dataset.select() 
 ```
@@ -24,11 +25,14 @@ drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
 2. 另一种方法是去Transformer包的model中查找相应的模型和对应的tokenizer，如BertTokenizer,RobertaTokenizer等，可以直接使用。<br>
 Tokenizer对文本进行分词并转化为对应的input_id，这里的id是与bert中embedding矩阵的索引号.<br>
 **BertTokenizer**只能加载bert的tokenizer，**AutoTokenizer**可以根据名字加载不同的tokenizer
-
+3. Tokenizer中可以指定padding, truncate, 返回类型（tensor，但tensor一定要每个句子长度相等，即padding）
 ```
 # from_pretrained方法可以载入tokenizer或预训练的模型 
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+model_inputs = tokenizer(sequences, padding="max_length"/True, truncation = True, return_tensors="pt")
+
 encoded_input = tokenizer("我是一句话")
 
 ```
