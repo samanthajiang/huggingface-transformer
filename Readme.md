@@ -4,6 +4,7 @@
 重点讲tokenizer，bertmodel的：https://zhuanlan.zhihu.com/p/120315111
 
 ## Data Processing
+dataset hub: https://huggingface.co/datasets
 dataset文档：https://huggingface.co/docs/datasets/load_hub<br>
 更详细的：包括load local/custom dataset，filter，slice，map，split，见：
 https://huggingface.co/course/chapter5/3?fw=pt<br>
@@ -30,10 +31,10 @@ Tokenizer对文本进行分词并转化为对应的input_id，这里的id是与b
 # from_pretrained方法可以载入tokenizer或预训练的模型 
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+encoded_input = tokenizer("我是一句话")
 
 model_inputs = tokenizer(sequences, padding="max_length"/True, truncation = True, return_tensors="pt")
 
-encoded_input = tokenizer("我是一句话")
 
 ```
 tokenizer输出的是python dictionary
@@ -83,6 +84,7 @@ model = BertModel(config)
 
 # model weights are loaded from pretrained model. recommend using AutoModel here for checkpoint-agnostic code
 model = BertModel.from_pretrained()
+output = model(**model_inputs)
 ```
 
 ```
