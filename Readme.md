@@ -4,7 +4,7 @@
 重点讲tokenizer，bertmodel的：https://zhuanlan.zhihu.com/p/120315111
 
 ## Data Processing
-dataset hub: https://huggingface.co/datasets
+dataset hub: https://huggingface.co/datasets<br>
 dataset文档：https://huggingface.co/docs/datasets/load_hub<br>
 更详细的：包括load local/custom dataset，filter，slice，map，split，见：
 https://huggingface.co/course/chapter5/3?fw=pt<br>
@@ -63,10 +63,9 @@ PRETRAINED_VOCAB_FILES_MAP = {
 ```
 打开第一个地址就能得到bert-base-uncased的vocab信息
 
- ## Model&Config
-Model的input一定要是**tensor**
-用torch.tensor(encoded_sequence)转换成tensor。<br>
-在Model hub查到想要用的model的名字后，通过AutoModel.from_pretrained(model_name)就能载入对应model。<br>
+ ## Model &Config
+1. Model的input一定要是**tensor**, 用torch.tensor(encoded_sequence)转换成tensor。<br>
+2. 在[Model hub](https://huggingface.co/models?sort=downloads)查到想要用的model的名字后，通过AutoModel.from_pretrained(model_name)就能载入对应model。<br>
 也可以自己去Transformer库中的models找。例如bert.modeling_bert.py 中提供了**BertModel**等不同的预训练模型以供下载。并包含了BertEmbeddings，BertEncoder，BertPooler等的实现，可以按需修改模型结构。<br>
 **BertEmbeddings**这个类中可以清楚的看到，embedding由三种embedding相加得到，经过layernorm 和 dropout后输出。<br>
 **BertEncoder**主要将embedding的输出，逐个经过每一层Bertlayer的处理，得到各层hidden_state，再根据**config**的参数，来决定最后是否所有的hidden_state都要输出。<br>
