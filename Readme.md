@@ -182,13 +182,12 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 }
 ```
 ## Fine-tune
-BERT可以进行很多下游任务，transformers库中实现了一些下游任务。比如单文本分类，transformers库提供了BertForSequenceClassification类。<br>
+1. BERT可以进行很多下游任务，transformers库中实现了一些下游任务。比如单文本分类，transformers库提供了BertForSequenceClassification类。<br>
 #AutoModelForSequenceClassification可以根据模型名称用bert以外的模型。<br>
 想知道transformer提供了哪些model，可以去transformer库的init文件里看，比如from model.bert import BertForSequenceClassification,<br>
-然后再看模型继承的父类，就能看懂和修改模型结构。<br>
-我们也可以参考transformers中的实现，来做自己想做的任务。
-
-模型的训练有两种方法，一种是用huggingface自带的Trainer方法，一种是Pytorch。
+然后再看模型继承的父类，就能看懂和修改模型结构。我们也可以参考transformers中的实现，来做自己想做的任务。<br>
+2. 官方fine-tune的example： https://huggingface.co/docs/transformers/custom_datasets <br>
+3. 模型的训练有两种方法，一种是用huggingface自带的Trainer方法，一种是Pytorch。
 
 ### 方法一： Trainer API<br>
 **1. TrainingArguments class** <br>
