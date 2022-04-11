@@ -4,17 +4,79 @@
 重点讲tokenizer，bertmodel的：https://zhuanlan.zhihu.com/p/120315111
 
 ## Data Processing
-dataset hub: https://huggingface.co/datasets<br>
+1. dataset hub: https://huggingface.co/datasets<br>
 dataset文档：https://huggingface.co/docs/datasets/load_hub<br>
 更详细的：包括load local/custom dataset，filter，slice，map，split，见：
 https://huggingface.co/course/chapter5/3?fw=pt<br>
-By default, loading local files creates a **DatasetDict** object with a train split
-
+2. 不管是从本地还是网上载入数据, load_dataset返回的都是**DatasetDict** object，并且一定会有一个“train” key，对应Dataset对象。<br>
+3. 可以用data["train"].features 来查看label对应的含义；data["train"][0]输出数据第一行；data["train"]["text1"]输出所有列
 ```
+# load local data
 from dataset import load_dataset
 custom_data = load_dataset("csv", data_files="my_file.csv")
+
+DatasetDict({
+    train: Dataset({
+        features: ['text1', 'text2', 'labels'],
+        num_rows: 120000
+    })
+})
+
 ```
-create a random sample by chaining the Dataset.shuffle() and Dataset.select() 
+
+```
+# load online data
+online_data = load_dataset("glue", "mrpc")
+
+DatasetDict({
+    train: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 3668
+    })
+    validation: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 408
+    })
+    test: Dataset({
+        features: ['sentence1', 'sentence2', 'label', 'idx'],
+        num_rows: 1725
+    })
+})
+
+```
+4. Split to train and valid subset<br>
+**Local Data: Dataset.train_test_split**方法<br>
+**Online Data：load_dataset("name",split = "train[:114000]")**
+```
+# local data
+agnews_train = train_data["train"].train_test_split(train_size=0.95, seed=42)
+agnews_train["validation"] = agnews_train.pop("test") # Rename the default "test" split to "validation"
+
+DatasetDict({
+    train: Dataset({
+        features: ['labels', 'text'],
+        num_rows: 114000
+    })
+    test: Dataset({
+        features: ['labels', 'text'],
+        num_rows: 6000
+    })
+})
+
+```
+```
+# online data
+train_dataset = load_dataset("ag_news", split="train[:114000]")
+dev_dataset = load_dataset("ag_news", split="train[114000:]")
+test_dataset = load_dataset("ag_news", split="test")
+
+Dataset({
+    features: ['text', 'label'],
+    num_rows: 114000
+})
+```
+
+5. Create a random sample by chaining the Dataset.shuffle() and Dataset.select() 
 ```
 drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
 # Peek at the first few examples
@@ -27,7 +89,8 @@ drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
 Tokenizer对文本进行分词并转化为对应的input_id，这里的id是与bert中embedding矩阵的索引号.<br>
 **BertTokenizer**只能加载bert的tokenizer，**AutoTokenizer**可以根据名字加载不同的tokenizer<br>
 3. Tokenizer中可以指定padding, truncate, 返回类型（tensor，但tensor一定要每个句子长度相等，即padding）<br>
-4. Tokenizer的输入应该是str或List of str, 输出是Dictionary,包括 'input_ids': tensor，'token_type_ids': tensor，'attention_mask': tensor<br>
+**注意**tokenizer里的padding = True/maxlength是把**所有数据**都pad到同一长度，而官方的tutorial里采用的是**每个batch**的数据pad到同一长度，因为这样计算效率更高。具体见下面fine-tune的部分。<br>
+4. Tokenizer的输入应该是**str**或**List of str**, 输出是Dictionary,包括 'input_ids': tensor，'token_type_ids': tensor，'attention_mask': tensor<br>
 ```
 # from_pretrained方法可以载入tokenizer或预训练的模型 
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -187,14 +250,29 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 想知道transformer提供了哪些model，可以去transformer库的init文件里看，比如from model.bert import BertForSequenceClassification,<br>
 然后再看模型继承的父类，就能看懂和修改模型结构。我们也可以参考transformers中的实现，来做自己想做的任务。<br>
 2. 官方fine-tune的example： https://huggingface.co/docs/transformers/custom_datasets <br>
-3. 模型的训练有两种方法，一种是用huggingface自带的Trainer方法，一种是Pytorch。
+3. 模型的fine-tune有两种方法，一种是用huggingface自带的Trainer方法，一种是Pytorch。
 
 ### 方法一： Trainer API<br>
 **1. TrainingArguments class** <br>
 https://huggingface.co/course/chapter3/3?fw=pt
 
 ### 方法二： Pytorch<br>
-1. 用Dataloader产生batch数据（Trainer API不用这样做）
+0. Preprocess
+```
+def preprocess_function(examples):
+    return tokenizer(examples["text"], truncation=True)
+```
+Use Datasets map function to apply the preprocessing function to the entire dataset. 
+```
+tokenized_imdb = imdb.map(preprocess_function, batched=True)
+```
+Lastly, pad your text so they are a uniform length. While it is possible to pad your text in the tokenizer function by setting padding=True, it is more efficient to only pad the text to the length of the longest element in its batch. This is known as dynamic padding. You can do this with the DataCollatorWithPadding function:
+```
+from transformers import DataCollatorWithPadding
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+```
+
+2. 用Dataloader产生batch数据（Trainer API不用这样做）
 ```
 from torch.utils.data import DataLoader
 
