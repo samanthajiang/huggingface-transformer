@@ -83,14 +83,13 @@ drug_sample = drug_dataset["train"].shuffle(seed=42).select(range(1000))
 ```
 
 ## Tokenizer
-1. 要知道哪个model用了哪个tokenizer，需要去model_hub里找model对应的tokenizer。<br>
-用AutoTokenizer.from_pretrained(model_name)可以自动载入对应的tokenizer。<br>
-2. 另一种方法是去Transformer包的model中查找相应的模型和对应的tokenizer，如BertTokenizer,RobertaTokenizer等，可以直接使用。<br>
+1. Tokenizer的输入应该是**str**或**List of str**, 输出是**Dictionary**,包括 'input_ids': tensor，'token_type_ids': tensor，'attention_mask': tensor<br>
+2. 要知道哪个model用了哪个tokenizer，需要去model_hub里找model对应的tokenizer，如BertTokenizer,RobertaTokenizer等，可以直接使用。当然用**AutoTokenizer**.from_pretrained(model_name)可以自动载入对应的tokenizer。（**BertTokenizer**只能加载bert的tokenizer，**AutoTokenizer**可以根据名字加载不同的tokenizer）。<br>
 Tokenizer对文本进行分词并转化为对应的input_id，这里的id是与bert中embedding矩阵的索引号.<br>
-**BertTokenizer**只能加载bert的tokenizer，**AutoTokenizer**可以根据名字加载不同的tokenizer<br>
-3. Tokenizer中可以指定padding, truncate, 返回类型（tensor，但tensor一定要每个句子长度相等，即padding）<br>
-**注意**tokenizer里的padding = True/maxlength是把**所有数据**都pad到同一长度，而官方的tutorial里采用的是**每个batch**的数据pad到同一长度，因为这样计算效率更高。具体见下面fine-tune的部分。<br>
-4. Tokenizer的输入应该是**str**或**List of str**, 输出是Dictionary,包括 'input_ids': tensor，'token_type_ids': tensor，'attention_mask': tensor<br>
+3. Tokenizer中可以指定padding, truncate和返回类型（tensor，但tensor一定要每个句子长度相等，即padding）<br>
+**注意**tokenizer里的padding = True/maxlength是把**所有数据**都pad到同一长度，而官方的tutorial里采用的是**每个batch**的数据pad到同一长度，因为这样计算效率更高。<br>
+另外**不用tokenizer（”text“）来处理句子**，因为这样返回的是Dictionary，如何和原来的label pair相结合呢？太麻烦了。因此采用**Dataset.map()** 方法，该方法是在原来Dataset里产生**新的field**，这样就能和label pair起来。**具体见下面fine-tune的部分**。<br>
+
 ```
 # from_pretrained方法可以载入tokenizer或预训练的模型 
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -257,16 +256,28 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 https://huggingface.co/course/chapter3/3?fw=pt
 
 ### 方法二： Pytorch<br>
-0. Preprocess
+0. Preprocess<br>
+(1) 上述提到不直接用tokenizer("text")来分词（返回的是dictionary，要和label pair起来比较麻烦），而是应先定义如下分词方法：
 ```
-def preprocess_function(examples):
-    return tokenizer(examples["text"], truncation=True)
+def tokenize_function(example):
+    return tokenizer(example["sentence1"], example["sentence2"], truncation=True)
 ```
-Use Datasets map function to apply the preprocessing function to the entire dataset. 
+
+(2) 用Datasets.map()方法来分词：adding new fields to the datasets。 <br>
+map表示Apply a function to all the examples in the table (individually or in batches)<br>
+This function takes a dictionary (like the items of our dataset) and returns a new dictionary with the keys input_ids, attention_mask, and token_type_ids.<br>
 ```
-tokenized_imdb = imdb.map(preprocess_function, batched=True)
+tokenized_datasets = raw_datasets.map(tokenize_function, remove_columns= ["sentence1","sentence2","idx"], batched=True)
 ```
-Lastly, pad your text so they are a uniform length. While it is possible to pad your text in the tokenizer function by setting padding=True, it is more efficient to only pad the text to the length of the longest element in its batch. This is known as dynamic padding. You can do this with the DataCollatorWithPadding function:
+或
+```
+tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
+tokenized_datasets = tokenized_datasets.remove_columns(["sentence1", "sentence2", "idx"])
+tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
+tokenized_datasets.set_format("torch")
+```
+(3) Lastly, **pad** your text so they are a uniform length. While it is possible to pad your text in the tokenizer function by setting padding=True, it is more efficient to only pad the text to the length of the longest element in its batch. This is known as dynamic padding. You can do this with the **DataCollatorWithPadding** function. <br>
+The function that is responsible for putting together samples inside a batch is called a **collate function**. It’s an argument you can pass when you build a **DataLoader**, the default being a function that will just convert your samples to PyTorch tensors and concatenate them. This won’t be possible in our case since the inputs we have won’t all be of the same size. So the **collate function** are rewritten as **data_collator** which pad samples to the same length.
 ```
 from transformers import DataCollatorWithPadding
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
