@@ -250,7 +250,12 @@ BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 然后再看模型继承的父类，就能看懂和修改模型结构。我们也可以参考transformers中的实现，来做自己想做的任务。<br>
 2. 官方fine-tune的example： https://huggingface.co/docs/transformers/custom_datasets <br>
 3. 模型的fine-tune有两种方法，一种是用huggingface自带的Trainer方法，一种是Pytorch。
-
+4. 在微调过程中，BERT 的作者建议使用以下超参 (from Appendix A.3 of the BERT paper):：
+```
+批量大小：16, 32
+学习率（Adam）：5e-5, 3e-5, 2e-5
+epochs 的次数：2, 3, 4
+```
 ### 方法一： Trainer API<br>
 **1. TrainingArguments class** <br>
 https://huggingface.co/course/chapter3/3?fw=pt
