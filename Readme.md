@@ -296,6 +296,28 @@ train_dataloader = DataLoader(
     tokenized_datasets["train"], shuffle=True, batch_size=8, collate_fn=data_collator
 )
 ```
+模型的输入是batch，即：
+```
+for batch in train_dataloader:
+    outputs = model(**batch)
+```
+如果打印batch，可以看出batch其实是把8个（batch_size=8）sample tokenized后的信息concatenate在一起的dictionary<br>
+**注意**  dictionary里面是tensor，如果不是tensor，model没法接收，要用tokenizer(str,**return_tensors='pt'**)来转为tensor
+```
+print(batch)
+
+{'attention_mask': tensor([[1, 1, 1,  ..., 0, 0, 0],
+        ...,
+        [1, 1, 1,  ..., 0, 0, 0]]),
+ 'input_ids': tensor([[  101,  3304,  1998,  ...,     0,     0,     0],
+        ...,
+        [  101,  3103,  4520,  ...,     0,     0,     0]]), 
+ 'labels': tensor([0, 0, 2, 1, 1, 2, 0, 1, 1, 3, 3, 3, 1, 2, 1, 2, 2, 1, 3, 2, 2, 1, 2, 2,
+        3, 0, 2, 2, 1, 3, 0, 3]), 
+ 'token_type_ids': tensor([[0, 0, 0,  ..., 0, 0, 0],
+        ...,
+        [0, 0, 0,  ..., 0, 0, 0]])}
+```
 2. 定义模型
 ```
 model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)
